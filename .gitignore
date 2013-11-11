@@ -1,0 +1,7 @@
+*.grb
+
+*.class
+*.png
+*.html
+
+nctoolbox/demos/
