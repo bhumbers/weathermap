@@ -4,24 +4,29 @@
 %each time you boot up MATLAB
 
 year = 2007;
-days = [180:185];
+days = 180;
 hours=0:23;
 varNames = {'N2-m_above_ground_Temperature'};
 latRange = [40,41];%[40 45];
 lonRange = [-80, -79];%[-85 -75];
 
 %Downloading data (only run when needed!)
-for day = days
-   downloadDataForDay(year, day);
-end
+% for day = days
+%    downloadDataForDay(year, day);
+% end
 
 nVars = length(varNames);
 
 p = 2;  %order of VAR lag
 % n = ;   %length of total vector of variables for one timestep
 
+clear X;
+xRow = 1; %rows correspond to time steps
 for day = days
     for hour = hours 
+        %Each block of columns corresponds to reshaped (vectorized) grid values of one variable type
+        xCol = 1;  
+        
         disp(['Loading data for hour ', num2str(hour)]);
 
         %Load GRB file for a single hour timestep
@@ -47,15 +52,23 @@ for day = days
             latIndices = find(varGrid.lat > latRange(1) & varGrid.lat < latRange(2));
             lonIndices = find(varGrid.lon > lonRange(1) & varGrid.lon < lonRange(2));
 
-            %For visualization debugging
-            mv = mean2(varData(latIndices,lonIndices));
-            mvs(hour+1) = mv;
-            disp(['Mean value: ', num2str(mv)]);
-            pcolorjw(double(varData(latIndices,lonIndices)));
-            caxis([274 300]);
+            %Add this grid of values into total data array
+            dataSegment = varData(latIndices,lonIndices);
+            n = numel(dataSegment);
+            X(xRow, xCol:xCol+n-1) = reshape(dataSegment, 1, n); 
+            xCol = xCol + n;
+            
+%             %For visualization debugging
+%             mv = mean2(varData(latIndices,lonIndices));
+%             mvs(hour+1) = mv;
+%             disp(['Mean value: ', num2str(mv)]);
+%             pcolorjw(double(varData(latIndices,lonIndices)));
+%             caxis([274 300]);
         end
-
-        pause(0.1);
+    
+        xRow = xRow + 1;
+        
+%         pause(0.1);
     end
 end
    
