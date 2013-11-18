@@ -1,7 +1,11 @@
 *.grb
+*.gbx8 
 
 *.class
 *.png
 *.html
 
+*.asv
+
+hydro1.sci.gsfc.nasa.gov/
 nctoolbox/demos/
