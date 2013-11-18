@@ -5,7 +5,16 @@
 *.png
 *.html
 
+# Latex intermediate output stuff
+*.bbl
 *.asv
+*.log
+*.blg
+*.out
+*.gz
+*.aux
+
+*.m~
 
 hydro1.sci.gsfc.nasa.gov/
 nctoolbox/demos/

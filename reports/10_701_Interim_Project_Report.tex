@@ -1,0 +1,64 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{nips13submit_e,times}
+\usepackage{hyperref}
+\usepackage{url}
+%\documentstyle[nips13submit_09,times,art10]{article} % For LaTeX 2.09
+
+
+\title{Predicting Meteorological Values on a Spatial Grid}
+
+
+\author{
+Felipe Hern\'{a}ndez \\
+\texttt{felipeh@andrew.cmu.edu} \\
+\And
+Ben Humberston\\
+\texttt{bhumbers@cs.cmu.edu} \\
+}
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+
+\nipsfinalcopy
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+TODO
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+\subsection{Motivation}
+\label{sec:motivation}
+Weather forecasts are broadly used; from personal activity planning (What clothes should I wear 
+today? Will it be a good time to plan outdoor events?); to large-scale economical decisionmaking (What activities should be prioritized on a crop next week? What precautions should the 
+air-traffic controllers enforce on a given day?); to emergency preparation and response (What 
+alternate routes should become available due to snow?, Where should the emergency vehicles 
+be sent during a flood event?). The availability and accuracy of forecasts thus have a profound 
+impact on human activities at many levels, both in measurable and unmeasurable aspects.
+However, predicting weather is a difficult research problem. Most often, physically-based 
+models with global scale are used to forecast future conditions. In this project, we will instead 
+take a machine learning approach focused on a local scale and attempt to predict atmospheric 
+variables at a specific geographic location. The forecasts will be based on prior atmospheric 
+states in the neighborhood of the selected location. In particular, we will attempt to predict 
+variables such as pressure, precipitation, and temperature based on the previous values of 
+these variables based on regular historical snapshots produced from satellite observations by 
+NASA.
+
+\subsection{Related Work}\label{sec:related_work}
+TODO
+
+\section{Method}
+\label{sec:method}
+TODO
+
+Citation test: \cite{Durban2001}.
+
+\bibliographystyle{unsrt}
+\bibliography{10_701_Project_Refs}
+
+\end{document}
