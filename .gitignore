@@ -1,8 +1,9 @@
 *.grb
 *.gbx8 
 
+*NC Toolbox stuff
+/nctoolbox/cdm/utilities/misc/*.png
 *.class
-*.png
 *.html
 
 # Latex intermediate output stuff
