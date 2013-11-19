@@ -16,6 +16,7 @@
 \newcommand{\VARlag}{p}
 \newcommand{\VARdata}{X}
 \newcommand{\VARmodel}{\bs{\Pi}}
+\newcommand{\VARoffset}{\bs{c}}
 \newcommand {\VARtrainData}{\VARdata_train}
 \newcommand {\VARnoise}{\epsilon}
 \newcommand{\predicted}{\hat}
@@ -72,32 +73,42 @@ TODO
 
 \section{Method}
 \label{sec:method}
-We will be using a vecor autoregressive (VAR) model in order to model and predict the evolution of our meteorological system over time. 
-TODO: Describe the basic VAR model, and why regularization might be necessary.
-- Note that vals are mean-centered and modified to have unit variance
+We will be using a vecor autoregressive (VAR) model in order to model and predict the evolution of our meteorological system over time.  We will adopt the formulation given in \cite{SpluTimeSeries2006}.  The model describes the system values at time $t$ given some number of prior system states $p$, which is the lag order of the model:
 
 \begin{equation}
-fd
+\VARdata_t = \VARoffset + \VARmodel_1 \VARdata_{t-1} + ... +  \VARmodel_\VARlag \VARdata_{t-\VARlag} + \epsilon_t, t = 1, ...,T
 \end{equation}
+
+TODO: Describe each term in the above
+
+Note that each variable is offset to zero-mean over all time steps and normalized to have unit variance.
+
+TODO: Describe how to solve the above
+
+TODO: Equation noting how $\VARmodel$ is concatenation of each individual $\VARmodel_i$
 
 \subsection{Lasso}
 TODO: Describe how basic lasso works and why we would use it (sparsity, feature selection). Be sure to note original \cite{Tibshirani1996} source for LASSO.
 
-\subsection{Fused Lasso}
-The fused lasso is a modified version of lasso and was introduced by \cite{Tibshirani2005}. It is useful for time series data because it encoded relationships between successive parameters
-TODO: Relate Eq 3 from \cite{Tibshirani2005} to our VAR model (what is Y? what is X?)
+TODO: Equation giving our problem formulated for lasso regularization
 
-In particular, this may be useful if we examine the VAR model behavior over longer time scales than hour-by-hour weather. There is, of course, 
+\subsection{Fused Lasso}
+The fused lasso is a modified version of lasso and was introduced by \cite{Tibshirani2005}. It is useful for time series data because it encodes the relationship between successive parameters
+
+TODO: Equation for fused lasso in our context
+
+In particular, this may be useful if we examine the VAR model behavior over longer time scales than hour-by-hour weather. There is, of course, seasonal variations in meteorological variables, and it is possible that the system behavior is also dynamic based on the time of year. 
+
+TODO: Discuss different optimization framework needed for fused lasso (see source work)
 
 \subsection{Evaluation}
-The success of our model depends on its ability to correctly forecast (predict) the new system state at time $t$ based on the system state at times $t-\VARlag$ to $t-1$. Since there is some inherent noise $\VARnoise$ in the variables of the system, the best we can hope to do is to minimize the residual of predicted system state $\predicted{\VARdata}(t)$ relative to the actual historical observation $\VARdata(t)$ to within some reasonable range of this noise term. 
-
+The success of our model depends on its ability to correctly forecast (predict) the new system state at time $t$ based on the system state at times $t-\VARlag$ to $t-1$. Since there is some inherent noise $\VARnoise$ in the variables of the system, the primary goal is to minimize the residual of predicted system state $\predicted{\VARdata}(t)$ relative to the actual historical observation $\VARdata(t)$ to within some reasonable range of this noise term.  The size of our data set allows us to easily train on a subset of the full data and test on a completely independent set (eg: train on data from the year 2004, test on data from the year 2007).
 
 \section{Results}
 \label{sec:results}
-Currently, we have implemented both a simple linear regression model as well as a standard VAR($VARlag$) model which predicts new system values given prior system states. 
+Currently, we have implemented both a simple linear regression model as well as a standard VAR($\VARlag$) model which predicts new system values given prior system states. We illustrate an example of the output from the VAR model in Figure~\ref{fig:var_data_example}.
 
-So far, both have shown poor performance, where the errors in the model output are very large relative to the expected noise in each observed variable.
+So far, both models have shown poor performance, where the errors in the model output are very large relative to the expected noise in each observed variable.
 
 \begin{figure}
 \centering
@@ -120,11 +131,13 @@ So far, both have shown poor performance, where the errors in the model output a
 
 TODO: Image showing heat-map evolution of temperature, pressure values, with 1 row per timestep and 1 column per variable. Indicate how grid of values is remapped to a single section of a row.
 
-There are several possible reasons for this which we intend to investigate. First, the VAR model assumes a \emph{stationary} process, and our current preprocessing of the data before fitting the model may not guarantee this assumption. Additionally, there may be endogenous variables which affect the predictions which we are not yet including in the model (eg: wind speeds, elevation, etc.). 
+There are several possible reasons for this which we intend to investigate. First, the VAR model assumes a \emph{stationary} process, and our current preprocessing of the data before fitting the model may not guarantee this assumption. Additionally, there may be exogenous variables which affect the predictions which we are not yet including in the model (eg: wind speeds, elevation, etc.). It may be necessary to include these terms by augmenting our model to be as follows:
 
-Citation test: \cite{Durban2001}.
+\begin{equation}
+TODO
+\end{equation}
 
-\bibliographystyle{unsrt}
+\bibliographystyle{plain}
 \bibliography{10_701_Project_Refs}
 
 \end{document}
