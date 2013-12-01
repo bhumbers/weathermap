@@ -12,6 +12,7 @@ function [ X ] = loadData( varNames, latRange, lonRange, year, days, hours)
 xRow = 1; %rows correspond to time steps
 T = length(days) * length(hours);
 for day = days
+    disp(['Starting to load data for day ', num2str(day)]);
     for hour = hours 
         %Each block of columns corresponds to reshaped (vectorized) grid values of one variable type
         xCol = 1;  
@@ -38,8 +39,8 @@ for day = days
 
             %Grab grid indices for lat/long ranges
             %Assumes 'varGrid' is a struct w/ lat and lon fields, each being an array for that axis
-            latIndices = find(varGrid.lat > latRange(1) & varGrid.lat < latRange(2));
-            lonIndices = find(varGrid.lon > lonRange(1) & varGrid.lon < lonRange(2));
+            latIndices = find(varGrid.lat >= latRange(1) & varGrid.lat <= latRange(2));
+            lonIndices = find(varGrid.lon >= lonRange(1) & varGrid.lon <= lonRange(2));
 
             %Add this grid of values into total data array
             dataSegment = varData(latIndices,lonIndices);

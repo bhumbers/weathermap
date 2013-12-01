@@ -13,11 +13,21 @@ function [ Xt ] = predVAR( Pi, Xp)
     %that we work in that space rather than w/ row vectors, then transpose
     %again to return out a row vector as the result
     
-    Xt = Pi(1,:)';
+    %Version w/ const offset term
+%     Xt = Pi(1,:)';
+%     for i=1:p
+%         r1 = 2 + (i-1)*N;
+%         r2 = 2 + (i*N) - 1;
+%         pi =  Pi(r1:r2,:)'; %Extract coefficient matrix for this time step
+%         Xt = Xt + (pi * Xp(i,:)');
+%     end 
+
+    %Version w/o const offset term
+    Xt = zeros(size(Xp,2),1);
     for i=1:p
-        r1 = 2 + (i-1)*N;
-        r2 = 2 + (i*N) - 1;
-        pi =  Pi(r1:r2,:)'; %Extract coefficient matrix for this time step
+        r1 = 1 + (i-1)*N;
+        r2 = 1 + (i*N) - 1;
+        pi = Pi(r1:r2,:)'; %Extract coefficient matrix for this time step
         Xt = Xt + (pi * Xp(i,:)');
     end 
 

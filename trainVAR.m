@@ -13,13 +13,20 @@ function [ Pi ] = trainVAR( X, p)
 % See http://faculty.washington.edu/ezivot/econ584/notes/varModels.pdf
 
 [T, N] = size(X);
-k = N*p + 1;
 
 %The t'th row of Z is comprised of the lagged observations for timestep t
+% %Version w/ const offset
+% k = N*p + 1;
+% Z = zeros(T-p, k);
+% Z(:,1) = 0; %constant offset term
+% for t=1:T-p
+%    Z(t,2:end) = reshape(flipud(X(t:t+p-1,:)), 1, N*p);
+% end
+%Version w/o const offset
+k = N*p;
 Z = zeros(T-p, k);
-Z(:,1) = 1; %constant offset term
 for t=1:T-p
-   Z(t,2:end) = reshape(flipud(X(t:t+p-1,:)), 1, N*p);
+   Z(t,:) = reshape(flipud(X(t:t+p-1,:)), 1, N*p);
 end
 
 %Now, we do OLS for each observation across all timesteps separately
