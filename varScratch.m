@@ -3,19 +3,20 @@
 
 %Training data specifications
 % year = 2010;
-% days = 258:260;
+% days = 258:268;
 % hours= 0:23;
+% % varNames = {'N2-m_above_ground_Temperature', 'Pressure', 'N10-m_above_ground_Meridional_wind_speed', 'N2-m_above_ground_Specific_humidity'};
 % varNames = {'N2-m_above_ground_Temperature', 'Pressure'};
 % latRange = [40,41];
 % lonRange = [-80, -79];
 year = 2010;
 days = 258:260;
 hours= 0:23;
-varNames = {'N2-m_above_ground_Temperature'};
+varNames = {'Pressure'};
 latRange = [40.062999725341800,40.062999725341800];
 lonRange = [-80.063003540039060,-80.063003540039060];
 
-useConstOffset = 0;
+useConstOffset = 1;
 
 % 
 % % %Downloading data (only run when needed!)
@@ -23,6 +24,8 @@ useConstOffset = 0;
 % %    downloadDataForDay(year, day);
 % % end
 % 
+
+%LOADING FROM DISK: Note that commenting this out once Xraw is loaded is a useful debugging speed boost.
 Xraw = loadData(varNames, latRange, lonRange, year, days, hours);
 
 % % DEBUGGING ONLY: Generate random time series data w/ noise
@@ -58,6 +61,11 @@ X = bsxfun(@minus, X, M); %shift to 0-mean
 % [T, N] = size(X);
 % W = sqrt(N) * sqrt(X*X');
 % X = W * X;
+%Method #3: Not really whitening... just use unit variance for each var
+%Using this since real whitening (using prior methods) was giving
+%complex-valued data.... :(
+stdX = std(X);
+X = bsxfun(@rdivide, X, stdX);
 
 %Diffs
 % X = diff(X,1);
@@ -65,7 +73,7 @@ X = bsxfun(@minus, X, M); %shift to 0-mean
 %DEBUGGING ONLY
 % X = X(1:20,:);
 
-split = 10;%size(X,1)/2;
+split = ceil(size(X,1) * 0.2);
 Xtrain = X(1:split,:);
 Xtest = X(split+1:end,:);
 
@@ -75,9 +83,7 @@ Xtest = X(split+1:end,:);
 %Lag of the model (ie: how many prior timesteps to include in the model)
 %This should be less than the # of timesteps in training data, or sadness
 %will result.
-ps = 2;
-
-XtestVar = var(Xtest);
+ps = 1:20;
 
 if (exist('pctErr')), clear pctErr; end
 if (exist('absErr')), clear absErr; end
@@ -107,7 +113,7 @@ for p = ps
 
         absErr(p,i,:) = abs(Xerr(i,:));
 %         pctErr(i,:) = abs(Xerr(i-p,:) ./ Xactual(i-p,:));
-        pctErr(p,i,:) = abs(Xerr(i,:) ./ XtestVar);
+        pctErr(p,i,:) = abs(Xerr(i,:) ./ stdX);
     end
     
     avgPctErr(p) = mean2(pctErr(p,:,:));
