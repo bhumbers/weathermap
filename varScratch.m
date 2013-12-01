@@ -15,29 +15,35 @@ varNames = {'N2-m_above_ground_Temperature'};
 latRange = [40.062999725341800,40.062999725341800];
 lonRange = [-80.063003540039060,-80.063003540039060];
 
+useConstOffset = 0;
+
 % 
 % % %Downloading data (only run when needed!)
 % % for day = days
 % %    downloadDataForDay(year, day);
 % % end
 % 
-% Xraw = loadData(varNames, latRange, lonRange, year, days, hours);
-
-X = Xraw;
+Xraw = loadData(varNames, latRange, lonRange, year, days, hours);
 
 % % DEBUGGING ONLY: Generate random time series data w/ noise
 % debugT = 100;
 % debugN = 1;
 % debugNoiseStdDev = 0.1;
-% clear X;
-% Xraw(1,:) = zeros(1, debugN);
-% % Xraw(2,:) = rand(1, debugN);
+% clear Xraw;
+% Xraw(1,:) = ones(1, debugN);
 % for i=2:debugT
-%    Xraw(i,:) = debugNoiseStdDev*randn(1,debugN);
+%    Xraw(i,:) = 0.8 * Xraw(i-1,:);%debugNoiseStdDev*randn(1,debugN);
 % end
 
-%Diffs
-% X = diff(X,2);
+% %DEBUGGING ONLY: Sine-wave signal
+% debugT = 100;
+% debugN = 1;
+% clear Xraw;
+% for i=1:debugT
+%    Xraw(i,:) = sin(i/20);
+% end
+
+X = Xraw;
 
 %Data whitening
 %Source: http://metaoptimize.com/qa/questions/4985/what-exactly-is-whitening
@@ -49,31 +55,36 @@ X = bsxfun(@minus, X, M); %shift to 0-mean
 % P = V * diag(sqrt(1./(diag(D) + 0.1))) * V';
 % X = X * P;
 %Method #2
-% % [T, N] = size(X);
-% % W = sqrt(N) * sqrt(X*X');
-% % X = W * X;
+% [T, N] = size(X);
+% W = sqrt(N) * sqrt(X*X');
+% X = W * X;
 
+%Diffs
+% X = diff(X,1);
 
-split = size(X,1)/2;
+%DEBUGGING ONLY
+% X = X(1:20,:);
+
+split = 10;%size(X,1)/2;
 Xtrain = X(1:split,:);
 Xtest = X(split+1:end,:);
 
 %DEBUGGING, ONLY
-Xtest = X; Xtrain = X;
+% Xtest = X; Xtrain = X;
 
 %Lag of the model (ie: how many prior timesteps to include in the model)
 %This should be less than the # of timesteps in training data, or sadness
 %will result.
-ps = 19;
+ps = 2;
 
-Xvars = var(X);
+XtestVar = var(Xtest);
 
 if (exist('pctErr')), clear pctErr; end
 if (exist('absErr')), clear absErr; end
 
 for p = ps 
     %Train the model
-    Pi{p} = trainVAR(Xtrain,p);
+    Pi{p} = trainVAR(Xtrain,p,useConstOffset);
 
     %Test forecasting accuracy
     XtestN = size(Xtest,1);
@@ -81,16 +92,22 @@ for p = ps
         Xactual(i,:) = Xtest(i,:);
         
         if (i < p + 1)
+            %Just dup the true data until we have enough history for the lag order to start making predictions
+            %TODO: don't include this initial part in the performance estimates
             Xpred(i,:) = Xtest(i,:);
         else
-            Xpred(i,:) = predVAR(Pi{p}, Xpred(i-p:i-1,:));
+            % %"Hard" version: Forecast many steps based on own previous estimates
+%             Xpred(i,:) = predVAR(Pi{p}, Xpred(i-p:i-1,:), useConstOffset);
+            
+            %"Easy" version: Forecast one step ahead based on real historical data
+            Xpred(i,:) = predVAR(Pi{p}, Xactual(i-p:i-1,:), useConstOffset);
         end
         
         Xerr(i,:) = Xpred(i,:) - Xactual(i,:);
 
         absErr(p,i,:) = abs(Xerr(i,:));
 %         pctErr(i,:) = abs(Xerr(i-p,:) ./ Xactual(i-p,:));
-        pctErr(p,i,:) = abs(Xerr(i,:) ./ Xvars);
+        pctErr(p,i,:) = abs(Xerr(i,:) ./ XtestVar);
     end
     
     avgPctErr(p) = mean2(pctErr(p,:,:));
