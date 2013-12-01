@@ -7,8 +7,9 @@ function [ Pi ] = trainVAR( X, p, useConstOffset)
 %   first (1 ... p) timesteps are used only as observational history for
 %   the p+1'st element (the first used for a VAR equation).
 %   useConstOffset: If 1, a linear offset is included in the model
-%   OUTPUT: Pi is an (N*p + 1 x N) matrix specifying the trained VAR model:
+%   OUTPUT: Pi is a (k x N) matrix specifying the trained VAR model:
 %       X(t,:) = Pi(1,:) + sum_over_i=1:p(Pi((2+(i-1)*N):(2+(i+N)),:) * X(t-i,:)) + eps_t
+%       k=N*p (+1 if useConstOffset is true)
 
 % Reformulate as a SUR problem and do OLS for each variable
 % See http://faculty.washington.edu/ezivot/econ584/notes/varModels.pdf
@@ -35,7 +36,10 @@ if (useConstOffset)
 end
 
 for t=1:T-p
-   Z(t,reshapeColRange) = reshape(flipud(X(t:t+p-1,:)), 1, N*p);
+    %NOTE the transpose after flipud... very important so that 
+    %we transform the data to a row vector by flattening all *rows* to a
+    %single vector rather than all *columns* (incorrect regression results otherwise)
+   Z(t,reshapeColRange) = reshape(flipud(X(t:t+p-1,:))', 1, N*p);
 end
 
 %Now, we do OLS for each observation across all timesteps separately

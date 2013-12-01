@@ -10,9 +10,9 @@
 % latRange = [40,41];
 % lonRange = [-80, -79];
 year = 2010;
-days = 258:260;
+days = 258:288;
 hours= 0:23;
-varNames = {'Pressure'};
+varNames = {'Pressure', 'N2-m_above_ground_Temperature'};
 latRange = [40.062999725341800,40.062999725341800];
 lonRange = [-80.063003540039060,-80.063003540039060];
 
@@ -39,7 +39,7 @@ Xraw = loadData(varNames, latRange, lonRange, year, days, hours);
 % end
 
 % %DEBUGGING ONLY: Sine-wave signal
-% debugT = 1000;
+% debugT = 100;
 % debugNoiseStdDev = 0.001;
 % clear Xraw;
 % for i=1:debugT
@@ -92,7 +92,7 @@ stdX = std(X);
 %Lag of the model (ie: how many prior timesteps to include in the model)
 %This should be less than the # of timesteps in training data, or sadness
 %will result.
-ps = 1:20;
+ps = 1:10;
 
 if (exist('pctErr')), clear pctErr; end
 if (exist('absErr')), clear absErr; end
