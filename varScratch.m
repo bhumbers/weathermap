@@ -6,7 +6,7 @@
 % days = 258:268;
 % hours= 0:23;
 % % varNames = {'N2-m_above_ground_Temperature', 'Pressure', 'N10-m_above_ground_Meridional_wind_speed', 'N2-m_above_ground_Specific_humidity'};
-% varNames = {'N2-m_above_ground_Temperature', 'Pressure'};
+% varNames = {'Pressure'};
 % latRange = [40,41];
 % lonRange = [-80, -79];
 year = 2010;
@@ -39,18 +39,21 @@ Xraw = loadData(varNames, latRange, lonRange, year, days, hours);
 % end
 
 % %DEBUGGING ONLY: Sine-wave signal
-% debugT = 100;
-% debugN = 1;
+% debugT = 1000;
+% debugNoiseStdDev = 0.001;
 % clear Xraw;
 % for i=1:debugT
-%    Xraw(i,:) = sin(i/20);
+%    Xraw(i,1) = sin((i-1)/20) + debugNoiseStdDev*randn(1,1);
+%    Xraw(i,2) = cos((i-1)/20) + debugNoiseStdDev*randn(1,1);
+%    Xraw(i,3) = sin((i-1)/10) + debugNoiseStdDev*randn(1,1);
+%    Xraw(i,4) = sin((i-1)/1) + debugNoiseStdDev*randn(1,1);
 % end
 
 X = Xraw;
 
 %Data whitening
 %Source: http://metaoptimize.com/qa/questions/4985/what-exactly-is-whitening
-M = mean(X);
+M = mean(Xraw);
 X = bsxfun(@minus, X, M); %shift to 0-mean
 %Method #1
 % C = cov(X);
@@ -64,8 +67,8 @@ X = bsxfun(@minus, X, M); %shift to 0-mean
 %Method #3: Not really whitening... just use unit variance for each var
 %Using this since real whitening (using prior methods) was giving
 %complex-valued data.... :(
-stdX = std(X);
-X = bsxfun(@rdivide, X, stdX);
+stdXRaw = std(Xraw);
+X = bsxfun(@rdivide, X, stdXRaw);
 
 %Diffs
 % X = diff(X,1);
@@ -73,12 +76,18 @@ X = bsxfun(@rdivide, X, stdX);
 %DEBUGGING ONLY
 % X = X(1:20,:);
 
-split = ceil(size(X,1) * 0.2);
+%Split into training & testing data sets
+pctOfDataForTraining = 0.2;
+split = ceil(size(X,1) * pctOfDataForTraining);
 Xtrain = X(1:split,:);
 Xtest = X(split+1:end,:);
 
-%DEBUGGING, ONLY
+%DEBUGGING, ONLY: Actually, use full data set for training & reuse same for testing
 % Xtest = X; Xtrain = X;
+
+%Note: assuming that we've whitened the data, std devs should all just be
+%1.0...but grab & use just in case we haven't whitened
+stdX = std(X);
 
 %Lag of the model (ie: how many prior timesteps to include in the model)
 %This should be less than the # of timesteps in training data, or sadness
@@ -99,7 +108,6 @@ for p = ps
         
         if (i < p + 1)
             %Just dup the true data until we have enough history for the lag order to start making predictions
-            %TODO: don't include this initial part in the performance estimates
             Xpred(i,:) = Xtest(i,:);
         else
             % %"Hard" version: Forecast many steps based on own previous estimates
@@ -116,8 +124,10 @@ for p = ps
         pctErr(p,i,:) = abs(Xerr(i,:) ./ stdX);
     end
     
-    avgPctErr(p) = mean2(pctErr(p,:,:));
-    avgAbsErr(p) = mean2(absErr(p,:,:));
+    %Note that we cut the initial p steps from the performance estimate,
+    %since those are just directly copied values from the test set
+    avgPctErr(p) = mean2(pctErr(p,(p+1):end,:));
+    avgAbsErr(p) = mean2(absErr(p,(p+1):end,:));
     disp(['Avg test error pct for lag p = ', num2str(p), ': ', num2str(avgPctErr(p))]);
 %     disp(['Avg absolute test error for lag p = ', num2str(p), ': ', num2str(avgAbsErr(p))]);
 end
