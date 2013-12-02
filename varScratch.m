@@ -10,11 +10,13 @@
 % latRange = [40,41];
 % lonRange = [-80, -79];
 year = 2010;
-days = 258:288;
+days = 258:260;
 hours= 0:23;
-varNames = {'Pressure', 'N2-m_above_ground_Temperature'};
+varNames = {'Precipitation_hourly_total', 'Pressure', 'N2-m_above_ground_Temperature'};
 latRange = [40.062999725341800,40.062999725341800];
 lonRange = [-80.063003540039060,-80.063003540039060];
+% latRange = [40,41];
+% lonRange = [-80, -79];
 
 useConstOffset = 1;
 
@@ -26,7 +28,7 @@ useConstOffset = 1;
 % 
 
 %LOADING FROM DISK: Note that commenting this out once Xraw is loaded is a useful debugging speed boost.
-Xraw = loadData(varNames, latRange, lonRange, year, days, hours);
+% Xraw = loadData(varNames, latRange, lonRange, year, days, hours);
 
 % % DEBUGGING ONLY: Generate random time series data w/ noise
 % debugT = 100;
@@ -70,19 +72,22 @@ X = bsxfun(@minus, X, M); %shift to 0-mean
 stdXRaw = std(Xraw);
 X = bsxfun(@rdivide, X, stdXRaw);
 
-%Diffs
+%Diffs (for removing trends)
 % X = diff(X,1);
 
 %DEBUGGING ONLY
 % X = X(1:20,:);
 
 %Split into training & testing data sets
-pctOfDataForTraining = 0.2;
+pctOfDataForTraining = 0.5;
 split = ceil(size(X,1) * pctOfDataForTraining);
 Xtrain = X(1:split,:);
 Xtest = X(split+1:end,:);
 
-%DEBUGGING, ONLY: Actually, use full data set for training & reuse same for testing
+%DEBUGGING ONLY: Test set == training set
+% Xtest = Xtrain;
+
+%DEBUGGING ONLY: Actually, use full data set for training & reuse same for testing
 % Xtest = X; Xtrain = X;
 
 %Note: assuming that we've whitened the data, std devs should all just be
@@ -92,7 +97,7 @@ stdX = std(X);
 %Lag of the model (ie: how many prior timesteps to include in the model)
 %This should be less than the # of timesteps in training data, or sadness
 %will result.
-ps = 1:10;
+ps = 1;
 
 if (exist('pctErr')), clear pctErr; end
 if (exist('absErr')), clear absErr; end
@@ -119,15 +124,15 @@ for p = ps
         
         Xerr(i,:) = Xpred(i,:) - Xactual(i,:);
 
-        absErr(p,i,:) = abs(Xerr(i,:));
-%         pctErr(i,:) = abs(Xerr(i-p,:) ./ Xactual(i-p,:));
-        pctErr(p,i,:) = abs(Xerr(i,:) ./ stdX);
+        err(p,i,:) = Xerr(i,:);
+        %pctErr(p,i,:) = Xerr(i,:) ./ stdX;
     end
     
     %Note that we cut the initial p steps from the performance estimate,
     %since those are just directly copied values from the test set
-    avgPctErr(p) = mean2(pctErr(p,(p+1):end,:));
-    avgAbsErr(p) = mean2(absErr(p,(p+1):end,:));
+%     avgPctErr(p) = mean2(pctErr(p,(p+1):end,:));
+    avgPctErr(p,:) = sqrt(mean(squeeze(err(p,(p+1):end,:)).^2)) ./ stdX;
+%     avgAbsErr(p) = mean2(absErr(p,(p+1):end,:));
     disp(['Avg test error pct for lag p = ', num2str(p), ': ', num2str(avgPctErr(p))]);
 %     disp(['Avg absolute test error for lag p = ', num2str(p), ': ', num2str(avgAbsErr(p))]);
 end

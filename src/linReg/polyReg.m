@@ -11,15 +11,19 @@
 % @return Xpoly the feature matrix including all the higher polynomic terms
 % @return trainError the root mean square error (RMSE) on the training set
 % @return trainError the root mean square error (RMSE) on the test set
-function [w, Xpoly, terms, trainError, testError] = polyReg(X, y, degree, testPerc, addConstant = true)
+function [w, Xpoly, terms, trainError, testError] = polyReg(X, y, degree, testPerc, addConstant)
 	
+    if nargin < 5
+        addConstant = true
+    end
+
 	% Determine regression terms
 	m = size(X,2);
-	basicTerms = [char(zeros(m, 1).+"x"), strjust(num2str((1:m)'), "left")];
+% 	basicTerms = [char(zeros(m, 1) .+ 'x'), strjust(num2str((1:m)'), 'left')];
 	Xpoly = [];
 	terms = [];
 		indices = (0:m)';
-		nTerms = unique(sort(npermutek(indices, degree), 2), "rows");
+		nTerms = unique(sort(npermutek(indices, degree), 2), 'rows');
 		nTerms = nTerms(2:size(nTerms, 1), :);
 		for i = 1:size(nTerms, 1)
 			combination = nonzeros(nTerms(i, :));
@@ -29,18 +33,19 @@ function [w, Xpoly, terms, trainError, testError] = polyReg(X, y, degree, testPe
 			first = true;
 			for j = 1:size(combination, 2)
 				if first,
-					times = "";
+					times = '';
 				else
-					times = "*";
+					times = '*';
 				end
-				term = [term, times, basicTerms(combination(j), :)];
+% 				term = [term, times, basicTerms(combination(j), :)];
+                term = [term, times];
 				first = false;
 			end
 			terms = [terms; term];
 		end
-	if addConstant,
-		terms = [terms; "constant"];
-	end
+% 	if addConstant,
+% 		terms = [terms; 'constant'];
+% 	end
 	
 	% Compute regression
 	[w, trainError, testError] = linRegTest(Xpoly, y, testPerc, addConstant);

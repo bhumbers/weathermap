@@ -8,7 +8,12 @@
 % @return w the vector with the regression coefficients of size m 
 % @return trainError the root mean square error (RMSE) on the training set
 % @return trainError the root mean square error (RMSE) on the test set
-function [w, trainError, testError] = linRegTest(X, y, testPerc, addConstant = true)
+function [w, trainError, testError] = linRegTest(X, y, testPerc, addConstant)
+    if nargin < 4
+        addConstant = true;
+    end
+
+
 	if addConstant,
 		X = [X, ones(size(X, 1), 1)];
 	end

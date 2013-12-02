@@ -12,8 +12,8 @@ function [x] = nldas2script(degree, trials)
 		tseavg = mean(tse)
 		wavg(:, var) = mean(w, 2);
 	end
-	save terms.txt terms -text;
-	save results.txt wavg -ascii;
-	x = "Done!";
+% 	save terms.txt terms -text;
+% 	save results.txt wavg -ascii;
+	x = 'Done!';
 	
 end
