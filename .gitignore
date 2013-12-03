@@ -1,6 +1,9 @@
 *.grb
 *.gbx8 
 
+.ignore/*
+~$*.pptx
+
 *NC Toolbox stuff
 /nctoolbox/cdm/utilities/misc/*.png
 *.class
