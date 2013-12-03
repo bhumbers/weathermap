@@ -28,12 +28,10 @@ if nargin < 1
                 };
     % latRange = [40.062999725341800,40.062999725341800];
     % lonRange = [-80.063003540039060,-80.063003540039060];
-    % latRange = [40.1875, 40.9];
-    % lonRange = [-80.3125, -79.5];
-    latRange = [40.062999725341800,40.062999725341800];
-    lonRange = [-80.063003540039060,-80.063003540039060];
-
-    useConstOffset = 1;
+    latRange = [40.1875, 40.9];
+    lonRange = [-80.3125, -79.5];
+%     latRange = [40.062999725341800,40.062999725341800];
+%     lonRange = [-80.063003540039060,-80.063003540039060];
 
     % 
     %Downloading data (only run when needed!)
@@ -42,10 +40,17 @@ if nargin < 1
     % end
 
     %LOADING FROM DISK: Note that commenting this out once Xraw is loaded is a useful debugging speed boost.
-    % Xraw = loadData(varNames, latRange, lonRange, year, days, hours);
+%     Xraw = loadData(varNames, latRange, lonRange, year, days, hours);
 
     %Or, load a previously saved version
-    load 'Xraw.mat';
+    singleCellModel = true;
+    if singleCellModel
+        load 'Xraw.mat';  %Single-cell data
+        blockSize = 1; %assumed # of cells in data (NOTE THE HARDCODING)
+    else
+    load 'XrawFull.mat';    %All-cell data
+        blockSize = 36; %assumed # of cells in data (NOTE THE HARDCODING) 
+    end
 
     % %DEBUGGING: Load same data set as used for linear regression
     % %NOTE: ONLY WILL WORK FOR LOOKING AT SINGLE CELL. Need to modify layout of
@@ -110,7 +115,26 @@ X = Xraw;
 
 %Splice out any variables which we don't wish to include in the model
 varsOfInterest = 1:11;
-blockSize = 1; %assumed # of cells in data (NOTE THE HARDCODING)
+
+%Lag of the model (ie: how many prior timesteps to include in the model)
+%This should be less than the # of timesteps in training data, or sadness
+%will result.
+ps = 1:10;
+
+trainPct = 0.2;
+
+%Single-var-at-a-time version
+% i = 1;
+% for varOfInterest = varsOfInterest
+%     XsingleVar =  X(:,1+blockSize*(varOfInterest-1):blockSize*varOfInterest);
+%     avgPctErr(i) = doVAR(XsingleVar, ps, trainPct);
+%     i = i+1;
+% end
+% avgPctErrAcrossVarsAndLags = mean2(avgPctErr)
+% stdPctErrAcrossVarsAndLags = std2(avgPctErr)
+
+%Fig 3 & 4 of poster: RMS error with and without neighbor cells in model or other variables in model
+%Multi-vars version
 Xspliced = zeros(size(X,1), blockSize * length(varsOfInterest));
 i = 1;
 for varOfInterest = varsOfInterest
@@ -118,86 +142,38 @@ for varOfInterest = varsOfInterest
     i = i + 1;
 end
 X = Xspliced;
+avgPctErr = doVAR(X, ps, trainPct);
+avgPctErrAcrossVarsAndLags = mean2(avgPctErr)
+stdPctErrAcrossVarsAndLags = std2(avgPctErr)
 
-%Split into training & testing data sets
-pctOfDataForTraining = 0.2;
-split = ceil(size(X,1) * pctOfDataForTraining);
-Xtrain = X(1:split,:);
-Xtest = X(split+1:end,:);
-
-%DEBUGGING ONLY: Test set == training set
-% Xtest = Xtrain;
-
-%DEBUGGING ONLY: Actually, use full data set for training & reuse same for testing
-% Xtest = X; Xtrain = X;
-
-%Note: assuming that we've whitened the data, std devs should all just be
-%1.0...but grab & use just in case we haven't whitened
-stdX = std(X);
-
-%Lag of the model (ie: how many prior timesteps to include in the model)
-%This should be less than the # of timesteps in training data, or sadness
-%will result.
-ps = 1:10;
-
-if (exist('pctErr')), clear pctErr; end
-if (exist('absErr')), clear absErr; end
-if (exist('avgPctErr')), clear avgPctErr; end
-
-for p = ps 
-    %Train the model
-    Pi{p} = trainVAR(Xtrain,p,useConstOffset);
-
-    %Test forecasting accuracy
-    XtestN = size(Xtest,1);
-    for i = 1:XtestN
-        Xactual(i,:) = Xtest(i,:);
-        
-        if (i < p + 1)
-            %Just dup the true data until we have enough history for the lag order to start making predictions
-            Xpred(i,:) = Xtest(i,:);
-        else
-            % %"Hard" version: Forecast many steps based on own previous estimates
-%             Xpred(i,:) = predVAR(Pi{p}, Xpred(i-p:i-1,:), useConstOffset);
-            
-            %"Easy" version: Forecast one step ahead based on real historical data
-            Xpred(i,:) = predVAR(Pi{p}, Xactual(i-p:i-1,:), useConstOffset);
-        end
-        
-        Xerr(i,:) = Xpred(i,:) - Xactual(i,:);
-
-        err(p,i,:) = Xerr(i,:);
-        %pctErr(p,i,:) = Xerr(i,:) ./ stdX;
-    end
-    
-    %Note that we cut the initial p steps from the performance estimate,
-    %since those are just directly copied values from the test set
-%     avgPctErr(p) = mean2(pctErr(p,(p+1):end,:));
-    avgPctErr(p,:) = sqrt(mean(squeeze(err(p,(p+1):end,:)).^2)) ./ stdX;
-%     avgAbsErr(p) = mean2(absErr(p,(p+1):end,:));
-    disp(['Avg test error pct for lag p = ', num2str(p), ': ', num2str(avgPctErr(p))]);
-%     disp(['Avg absolute test error for lag p = ', num2str(p), ': ', num2str(avgAbsErr(p))]);
-end
-
-
-%Test error vs. lag order
+%Fig 5 of poster: Test error vs. lag order
 avgPctErrAcrossVars = mean(avgPctErr,2);
 xMin = ps(1); xMax = ps(end); yMin = 0; yMax = 1;
-plot(avgPctErrAcrossVars, 'LineWidth', 5);
+plot(avgPctErrAcrossVars, 'LineWidth', 5, 'Color', [0.3,0.3,1]);
 % firstQuartileErrs       = prctile(avgPctErr, 25, 2);
 % thirdQuartileErrs       = prctile(avgPctErr, 75, 2);
 % %Returned handles: struct w/ mainLine, patch, and edge[2]
 % plotH = shadedErrorBar(ps, avgPctErrAcrossVars', [thirdQuartileErrs'; firstQuartileErrs'], '-r', 0);
 % set(plotH.mainLine, 'LineWidth', 4);
 % title(sprintf('Training Error'));
-title(sprintf('Test Error'));
+title(sprintf('Training Error'));
 xlabel('Lag Order');
-ylabel(sprintf('Normalized RMS Error'));
+ylabel(sprintf('Error'));
 axis([xMin xMax yMin yMax]);
 set(gca, 'XTick', 0:1:xMax);
 % set(gca, 'YTick', [yMin::yMax]);
+%Switch to % on y-axis (SOURCE: http://www.mathworks.com/matlabcentral/answers/94708)
+% Convert y-axis values to percentage values by multiplication
+a=[cellstr(num2str(get(gca,'ytick')'*100))]; 
+% Create a vector of '%' signs
+pct = char(ones(size(a,1),1)*'%'); 
+% Append the '%' signs after the percentage values
+new_yticks = [char(a),pct];
+% 'Reflect the changes on the plot
+set(gca,'yticklabel',new_yticks) 
 box off;
 sdf('10_701'); %apply our style (make sure it exists on your machine!)
+
 
 end
 
