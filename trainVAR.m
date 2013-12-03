@@ -48,7 +48,7 @@ for i=1:N
    x_i = X(1+p:end,i); %time series of observations for variable i
    
    %System to be solved: x_i = Z*pi_i
-   Pi(:,i) = Z \ x_i;
+   Pi(:,i) = double(Z) \ x_i;
 end
 
 end
