@@ -1,37 +1,37 @@
-function [ Xpred, Xactual] = varScratch(Xraw)
+% function [ Xpred, Xactual, avgPctErr, Pi] = varScratch(Xraw)
 %VARSCRATCH Scratch testing function for our VAR model
 
 
-if nargin < 1
-    %Training data specifications
-    % year = 2010;
-    % days = 258:268;
-    % hours= 0:23;
-    % % varNames = {'N2-m_above_ground_Temperature', 'Pressure', 'N10-m_above_ground_Meridional_wind_speed', 'N2-m_above_ground_Specific_humidity'};
-    % varNames = {'Pressure'};
-    % latRange = [40,41];
-    % lonRange = [-80, -79];
-    year = 2010;
-    days = 259:288;
-    hours= 0:23;
-    varNames = {'Precipitation_hourly_total', ...
-                'N180-0_mb_above_ground_Convective_Available_Potential_Energy', ...
-                'Fraction_of_total_precipitation_that_is_convective', ...
-                'LW_radiation_flux_downwards_surface', ...
-                'SW_radiation_flux_downwards_surface', ...
-                'Potential_evaporation', ...
-                'Pressure', ...
-                'N2-m_above_ground_Specific_humidity', ...
-                'N2-m_above_ground_Temperature', ...
-                'N10-m_above_ground_Zonal_wind_speed', ...
-                'N10-m_above_ground_Meridional_wind_speed' ...
-                };
-    % latRange = [40.062999725341800,40.062999725341800];
-    % lonRange = [-80.063003540039060,-80.063003540039060];
-    latRange = [40.1875, 40.9];
-    lonRange = [-80.3125, -79.5];
-%     latRange = [40.062999725341800,40.062999725341800];
-%     lonRange = [-80.063003540039060,-80.063003540039060];
+% if nargin < 1
+%     %Training data specifications
+%     % year = 2010;
+%     % days = 258:268;
+%     % hours= 0:23;
+%     % % varNames = {'N2-m_above_ground_Temperature', 'Pressure', 'N10-m_above_ground_Meridional_wind_speed', 'N2-m_above_ground_Specific_humidity'};
+%     % varNames = {'Pressure'};
+%     % latRange = [40,41];
+%     % lonRange = [-80, -79];
+%     year = 2010;
+%     days = 259:288;
+%     hours= 0:23;
+%     varNames = {'Precipitation_hourly_total', ...
+%                 'N180-0_mb_above_ground_Convective_Available_Potential_Energy', ...
+%                 'Fraction_of_total_precipitation_that_is_convective', ...
+%                 'LW_radiation_flux_downwards_surface', ...
+%                 'SW_radiation_flux_downwards_surface', ...
+%                 'Potential_evaporation', ...
+%                 'Pressure', ...
+%                 'N2-m_above_ground_Specific_humidity', ...
+%                 'N2-m_above_ground_Temperature', ...
+%                 'N10-m_above_ground_Zonal_wind_speed', ...
+%                 'N10-m_above_ground_Meridional_wind_speed' ...
+%                 };
+%     % latRange = [40.062999725341800,40.062999725341800];
+%     % lonRange = [-80.063003540039060,-80.063003540039060];
+%     latRange = [40.1875, 40.9];
+%     lonRange = [-80.3125, -79.5];
+% %     latRange = [40.062999725341800,40.062999725341800];
+% %     lonRange = [-80.063003540039060,-80.063003540039060];
 
     % 
     %Downloading data (only run when needed!)
@@ -43,12 +43,12 @@ if nargin < 1
 %     Xraw = loadData(varNames, latRange, lonRange, year, days, hours);
 
     %Or, load a previously saved version
-    singleCellModel = true;
+    singleCellModel = false;
     if singleCellModel
         load 'Xraw.mat';  %Single-cell data
         blockSize = 1; %assumed # of cells in data (NOTE THE HARDCODING)
     else
-    load 'XrawFull.mat';    %All-cell data
+        load 'XrawFull.mat';    %All-cell data
         blockSize = 36; %assumed # of cells in data (NOTE THE HARDCODING) 
     end
 
@@ -84,14 +84,14 @@ if nargin < 1
     %    Xraw(i,3) = sin((i-1)/10) + debugNoiseStdDev*randn(1,1);
     %    Xraw(i,4) = sin((i-1)/1) + debugNoiseStdDev*randn(1,1);
     % end
-end
+% end
 
 X = Xraw;
 
 %Data whitening
 %Source: http://metaoptimize.com/qa/questions/4985/what-exactly-is-whitening
-% M = mean(Xraw);
-% X = bsxfun(@minus, X, M); %shift to 0-mean
+M = mean(Xraw);
+X = bsxfun(@minus, X, M); %shift to 0-mean
 %Method #1
 % C = cov(X);
 % [V,D] = eig(C);
@@ -104,8 +104,8 @@ X = Xraw;
 %Method #3: Not really whitening... just use unit variance for each var
 %Using this since real whitening (using prior methods) was giving
 %complex-valued data.... :(
-% stdXRaw = std(Xraw);
-% X = bsxfun(@rdivide, X, stdXRaw);
+stdXRaw = std(Xraw);
+X = bsxfun(@rdivide, X, stdXRaw);
 
 %Diffs (for removing trends)
 % X = diff(X,1);
@@ -114,12 +114,12 @@ X = Xraw;
 % X = X(1:20,:);
 
 %Splice out any variables which we don't wish to include in the model
-varsOfInterest = 1:11;
+varsOfInterest = 7:9;
 
 %Lag of the model (ie: how many prior timesteps to include in the model)
 %This should be less than the # of timesteps in training data, or sadness
 %will result.
-ps = 1:10;
+ps = 1:2;
 
 trainPct = 0.2;
 
@@ -142,7 +142,8 @@ for varOfInterest = varsOfInterest
     i = i + 1;
 end
 X = Xspliced;
-avgPctErr = doVAR(X, ps, trainPct);
+
+[avgPctErr, Pi] = doVAR(X, ps, trainPct);
 avgPctErrAcrossVarsAndLags = mean2(avgPctErr)
 stdPctErrAcrossVarsAndLags = std2(avgPctErr)
 
@@ -175,5 +176,5 @@ box off;
 sdf('10_701'); %apply our style (make sure it exists on your machine!)
 
 
-end
+% end
 

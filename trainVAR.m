@@ -1,4 +1,4 @@
-function [ Pi ] = trainVAR( X, p, useConstOffset)
+function [ Pi ] = trainVAR( X, p, useConstOffset, useLasso)
 %TRAINVAR Trains a VAR model for given meteorological data
 %   X is an T x N vector, where N is the number of distinct variables per
 %       timestep, T is the number of timesteps used for training.
@@ -13,10 +13,6 @@ function [ Pi ] = trainVAR( X, p, useConstOffset)
 
 % Reformulate as a SUR problem and do OLS for each variable
 % See http://faculty.washington.edu/ezivot/econ584/notes/varModels.pdf
-
-if nargin < 3
-    useConstOffset = 0;
-end
 
 [T, N] = size(X);
 
@@ -45,11 +41,17 @@ end
 %Now, we do OLS for each observation across all timesteps separately
 Pi = zeros(k,N);
 for i=1:N
-   x_i = X(1+p:end,i); %time series of observations for variable i
-   
-   %System to be solved: x_i = Z*pi_i
-   Pi(:,i) = double(Z) \ x_i;
-end
+%     disp(['Running regression for i=', num2str(i)]);
+    x_i = X(1+p:end,i); %time series of observations for variable i
 
+    %System to be solved: x_i = Z*pi_i
+    if (useLasso)
+        Pi(:,i) = lasso(Z, X(1+p:end,i), 'Lambda', 0.045);  %Lasso version (slower, but prevents overfitting)
+    else
+        Pi(:,i) = double(Z) \ x_i; %OLS
+    end
+    
+end
+    
 end
 
