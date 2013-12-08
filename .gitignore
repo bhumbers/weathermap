@@ -3,6 +3,7 @@
 
 .ignore/*
 ~$*.pptx
+~$*.xlsx
 
 *NC Toolbox stuff
 /nctoolbox/cdm/utilities/misc/*.png
