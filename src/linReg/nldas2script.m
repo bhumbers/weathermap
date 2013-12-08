@@ -5,7 +5,7 @@ function [x] = nldas2script(degree, trials)
     end
     
     if nargin < 2
-        trials = 1;
+        trials = 10;
     end
 
 	load dinLinReg.txt;
@@ -14,13 +14,13 @@ function [x] = nldas2script(degree, trials)
     numTimesteps = 720;
     
     %Cut out so we're looking at data for just one cell
-    XA = XA(1:numTimesteps, :);
+%     XA = XA(1:numTimesteps, :);
     
     totVars = size(XA,2) / 2;
     
     %Specify variables of interest
-    xVars = 9;
-    yVars = 9;
+    xVars = 1:10;
+    yVars = 1:10;
     
 	X = XA(:, xVars);
     Y = XA(:,(totVars+1):end);
@@ -33,7 +33,7 @@ function [x] = nldas2script(degree, trials)
 	for yVar = yVars
 		y = Y(:, yVar);
 		for trial = 1:trials
-			[w(:, trial), Xpoly, terms, tre(trial), tse(trial)] = polyReg(X, y, degree, 0, true);
+			[w(:, trial), Xpoly, terms, tre(trial), tse(trial)] = polyReg(X, y, degree, 0.1, true);
 		end
 		treavg(yVar) = mean(tre');
 		tseavg(yVar) = mean(tse');
@@ -43,7 +43,9 @@ function [x] = nldas2script(degree, trials)
 % 	save results.txt wavg -ascii;
 
     tseavg = tseavg ./ stdY;
-    tseavg
+    tseavg;
+    treavg = treavg ./ stdY;
+    treavg
 
 	x = 'Done!';
 	
