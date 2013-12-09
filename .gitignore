@@ -4,6 +4,7 @@
 .ignore/*
 ~$*.pptx
 ~$*.xlsx
+~$*.docx
 
 *NC Toolbox stuff
 /nctoolbox/cdm/utilities/misc/*.png
