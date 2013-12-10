@@ -41,12 +41,15 @@ end
 %Now, we do OLS for each observation across all timesteps separately
 Pi = zeros(k,N);
 for i=1:N
-%     disp(['Running regression for i=', num2str(i)]);
+    disp(['Running regression for i=', num2str(i)]);
     x_i = X(1+p:end,i); %time series of observations for variable i
 
     %System to be solved: x_i = Z*pi_i
     if (useLasso)
         Pi(:,i) = lasso(Z, X(1+p:end,i), 'Lambda', 0.045);  %Lasso version (slower, but prevents overfitting)
+%         lambdas = 10.^[-1:1];
+%         [B, FitInfo] = lasso(Z, X(1+p:end,i), 'Lambda', lambdas, 'CV',2);
+%         Pi(:,i) = B(:,FitInfo.IndexMinMSE);
     else
         Pi(:,i) = double(Z) \ x_i; %OLS
     end
